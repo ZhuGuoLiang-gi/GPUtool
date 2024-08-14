@@ -35,6 +35,10 @@ Ensure you have these dependencies installed before running the script.
        # Get the available GPU devices
        gpu_devices = get_gpu_device(requery_memory, max_tasks_num_per_gpu, gpu_max_usage)
        print(param1, param2, f'Using GPU devices: {gpu_devices}')
+
+       if param1 == 1:
+           raise ValueError(f'param1 isn\' equal to 1')
+    
        
        # Simulate GPU workload for 30 seconds
        with torch.cuda.device(gpu_devices):
