@@ -82,7 +82,7 @@ Ensure you have these dependencies installed before running the script.
 
 
 
-## running output results
+## Running Output Information
 
 ### Execution Details
 <span style="color: #92c493;">2024-08-14 15:29</span>
@@ -107,18 +107,15 @@ Ensure you have these dependencies installed before running the script.
 <span style="color: #2ecc71; font-weight: bold;">Model using GPU 1 Load: 0 Occupied Num: 1</span>
 
 
-## complete results
+## Completed Results
 
----
 
 #### Process Summary
 
 **All 10 processes have completed:**
-- **Normal task number:** 9
-- **Error task number:** 1
-- **Running time:** 1.26 min
-
----
+- Normal task number: 9
+- Error task number: 1
+- Running time: 1.26 min
 
 #### Error Tasks Information
 
