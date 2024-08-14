@@ -13,42 +13,40 @@ To use this script, you'll need to have the necessary dependencies installed. En
 Here is an example of how to set up and execute batch tasks with GPU and memory control:
 
 ```python
-from tool import batch_task
+from tool import batch_task, get_gpu_device
 import os
 
 def exec_function(param1, param2, **kwargs):
     requery_memory = kwargs.get('requery_memory', None)
     gpu_max_usage = kwargs.get('gpu_max_usage', None)
     max_tasks_num_per_gpu = kwargs.get('max_tasks_num_per_gpu', None)
-    gpu_devices = get()
-    print(param1, param2)
+    gpu_devices = get_gpu_device(requery_memory, max_tasks_num_per_gpu, gpu_max_usage)
+    print(param1, param2, f'Using GPU devices: {gpu_devices}')
 
     return
 
 task_control = {
     'max_try': 0,
     'max_task_num_per_gpu': 3,
-    'interval_output_tasks_info': 60 * 0.2, # seconds
-    'gpu_max_load': 70,   # percentage
-    'requery_memory': 15000, # MB
+    'interval_output_tasks_info': 60 * 0.2,  # seconds
+    'gpu_max_load': 70,  # percentage
+    'requery_memory': 15000,  # MB
     'error_loop': True
 }
 
 tasks = []
 
 for i in range(10):
-    child_out_file = f'child_out_{i}.txt'
-    if not os.path.exists(child_out_file):
-        task = {
-            'task_name': f'task_{i}',
-            'func': exec_function,
-            'args': (i, i),
-            'kwargs': {
-                'requery_memory': task_control['requery_memory'],
-                'gpu_max_usage': task_control['gpu_max_load'],
-                'max_tasks_num_per_gpu': task_control['max_task_num_per_gpu'],
-            }
+    task = {
+        'task_name': f'task_{i}',
+        'func': exec_function,
+        'args': (i, i),
+        'kwargs': {
+            'requery_memory': task_control['requery_memory'],
+            'gpu_max_usage': task_control['gpu_max_load'],
+            'max_tasks_num_per_gpu': task_control['max_task_num_per_gpu'],
         }
-        tasks.append(task)
+    }
+    tasks.append(task)
 
 batch_task(tasks, **task_control)
