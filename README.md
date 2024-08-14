@@ -82,27 +82,13 @@ Ensure you have these dependencies installed before running the script.
 
 
 
-## Running Output Information
+## Output Information
 
 ### Execution Details
 ![Alt text](./runing_task_info.png)
 
-## Completed Results
+### Completed Results
 
-
-#### Process Summary
-
-**All 10 processes have completed:**
-- Normal task number: 9
-- Error task number: 1
-- Running time: 1.26 min
-
-#### Error Tasks Information
-
-| Task ID | Task Name | Task Function   |
-|:-------:|:---------:|:---------------:|
-|    1    |  task_1   | exec_function   |
-
----
+![Alt text](./completed_task_info.png)
 
 
