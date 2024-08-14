@@ -78,9 +78,9 @@ Ensure you have these dependencies installed before running the script.
 
 
 
-# running output results
+## running output results
 
-## Execution Details
+### Execution Details
 - <span style="color: #92c493;">2024-08-14 15:29</span>
   - Running time: 0.80 min                         
   - Running tasks: [5] 2, 3, 4, 8, 9                        
