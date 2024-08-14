@@ -13,11 +13,11 @@ import GPUtil
 import numpy as np
 
 def get_gpu_info():
-    # 运行 nvidia-smi 命令并捕获输出
+
     result = subprocess.run(['nvidia-smi', '--query-gpu=index,name,memory.total,memory.used,memory.free', '--format=csv,nounits,noheader'],
                             stdout=subprocess.PIPE, encoding='utf-8')
 
-    # 解析输出
+
     gpu_info = result.stdout.strip().split('\n')
     gpus = []
     for info in gpu_info:
@@ -30,7 +30,7 @@ def get_gpu_info():
             'memory_free': int(memory_free)
         })
 
-    # 按空闲显存排序
+
     gpus = sorted(gpus, key=lambda x: x['memory_free'], reverse=True)
 
 
@@ -38,13 +38,13 @@ def get_gpu_info():
 
     if free_gpus:
         for gpu in free_gpus:
-            print(f"GPU ID: {gpu['id']}, 名称: {gpu['name']}")
-            print(f"  总显存: {gpu['memory_total']} MB")
-            print(f"  已使用显存: {gpu['memory_used']} MB")
-            print(f"  空闲显存: {gpu['memory_free']} MB")
+            print(f"GPU ID: {gpu['id']}, name: {gpu['name']}")
+            print(f"  memory total: {gpu['memory_total']} MB")
+            print(f"  used memory: {gpu['memory_used']} MB")
+            print(f"  free memory: {gpu['memory_free']} MB")
             print("")
     else:
-        print("没有找到空闲的 GPU")
+        print("not found available GPU")
 
     return gpus
 
@@ -65,33 +65,29 @@ def get_free_gpus(min_memory_mb):
 
 def execute_remote_command(command,server_ip,username):
 
-    server_ip = '172.16.20.151'
-    username = 'zhengliangzhen'
-    
-    # 创建SSH客户端
+
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     
     try:
-        # 连接到服务器
         ssh.connect(server_ip, username=username)
         
         current_directory = os.getcwd()
         command = f'cd {current_directory} &&' + command 
-        # 执行远程命令
+      
         stdin, stdout, stderr = ssh.exec_command(command,get_pty=True)
         
-        # 设置非阻塞模式
+  
         stdout.channel.setblocking(0)
         stderr.channel.setblocking(0)
         
-        # 创建一个文件描述符列表
+    
         channels = [stdout.channel, stderr.channel]
         data = {stdout.channel: b'', stderr.channel: b''}
         
-        # 循环读取输出
+       
         while True:
-            # 使用select选择可读通道
+      
             readable, _, _ = select.select(channels, [], [])
             for chan in readable:
                 try:
@@ -99,26 +95,22 @@ def execute_remote_command(command,server_ip,username):
                 except Exception as e:
                     pass
 
-
-                # 检查是否还有数据可读
                 if chan.recv_ready():
                     continue
-                # 打印输出结果
+        
                 if chan is stdout.channel:
                     if data[stdout.channel]:
                         print(data[stdout.channel].decode('utf-8'), end='')
-                        data[stdout.channel] = b''  # 清空缓冲区
+                        data[stdout.channel] = b'' 
                 else:
                     if data[stderr.channel]:
                         print(data[stderr.channel].decode('utf-8'), end='')
-                        data[stderr.channel] = b''  # 清空缓冲区
+                        data[stderr.channel] = b'' 
 
-            # 检查命令是否已经执行完成
             if stdout.channel.exit_status_ready() and not stderr.channel.recv_ready():
                 break
         
     finally:
-        # 关闭SSH连接
         ssh.close()
 
 
@@ -163,9 +155,9 @@ def run_command(command):
 def check_gpu_memory(min_memory,gpu_id):
 
     pynvml.nvmlInit()
-    handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)  # 假设使用第一个GPU
+    handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)  
     info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-    free_memory = info.free / 1024 / 1024  # 转换为MB
+    free_memory = info.free / 1024 / 1024  
     pynvml.nvmlShutdown()
     
     return free_memory >= min_memory
@@ -220,7 +212,27 @@ def get_gpu_task_count(gpu_index):
     except Exception as e:
         print(f"Error: {e}")
         return 999
+
+
+def get_gpu_device(requery_memory,max_tasks_num_per_gpu,max_usage):
     
+    while True:
+        device = get_free_gpus(requery_memory)
+        gpu_usage_list = []
+        for gpu_id in device:
+            usage = get_gpu_usage(gpu_id)
+            if usage is not None:
+                gpu_usage_list.append((gpu_id, usage))
+        gpu_usage_list.sort(key=lambda x: x[1])
+        if not device:
+            print(f'not found available device')
+        else:
+            for gpu_id, usage in gpu_usage_list:
+                occupied_task_num = get_gpu_task_count(gpu_id)
+                if usage < max_usage and occupied_task_num <  max_tasks_num_per_gpu:
+                    print(f"\033[32;1m model using gpu {gpu_id} load:{usage} occupied_num:{occupied_task_num}\033[0m")
+                    return gpu_id
+        time.sleep(3)
 
 def batch_task(tasks,**kwargs):
     
