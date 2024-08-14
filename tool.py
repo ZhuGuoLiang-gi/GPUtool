@@ -368,15 +368,21 @@ def batch_task(tasks,**kwargs):
             print(f"\033[31mError in task:{task_name} \n\ttask_id:{idx} \n\tfunc_name:{task_func} \n\terror info:{error_message}\033[0m",flush=True)
             print('\n\033[1;35m' + traceback_info + '\033[0m',flush=True)
             
-        
-            p_idx = processes[idx]
-            p_idx.terminate()
-            p_idx.join()
+            if idx in processes:
+                p_idx = processes[idx]
+                p_idx.terminate()
+                p_idx.join()
            
             error_tasks.append(idx)
-            running_tasks.remove(idx)
-            completed_tasks.append(idx)
-            del processes[idx]
+            
+            if idx in running_tasks:
+                running_tasks.remove(idx)
+            
+            if idx not in completed_tasks:
+                completed_tasks.append(idx)
+                
+            if idx in processes:
+                del processes[idx]
             
             if task_task_times[idx] <  max_try and error_loop:
                 bold_black_on_white = "\033[1m\033[30m\033[47m"
