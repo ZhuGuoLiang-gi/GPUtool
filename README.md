@@ -85,27 +85,7 @@ Ensure you have these dependencies installed before running the script.
 ## Running Output Information
 
 ### Execution Details
-<span style="color: #92c493;">2024-08-14 15:29</span>
-- Running time: 0.80 min                         
-- Running tasks: [5] 2, 3, 4, 8, 9                        
-- Waiting tasks: [4] 0, 5, 6, 7                         
-- Completed tasks: [1] 1                         
-- Error tasks: [0]
-
-<span style="color: #9b59b6; font-weight: bold;">Remaining tasks: 9  Remaining time: 7.21 min</span>
-
-<span style="color: #1f77b4; font-weight: bold;">`exec_function has started.`</span>
-
-<span style="color: #1f77b4; font-weight: bold;">`TASK 2 HAS COMPLETED`</span>
-<span style="color: #1f77b4; font-weight: bold;">`TASK 3 HAS COMPLETED`</span>
-
-<span style="color: #96c5e0;">Found available GPU: GPU 1 - Occupied Total: 1 - Load: 0.7% - Available Memory: 27,905.00 MB - Memory Used: 4,605.00 MB - Memory Total: 32,510.00 MB</span>
-<span style="color: #96c5e0;">Found available GPU: GPU 3 - Occupied Total: 2 - Load: 4.5% - Available Memory: 31,415.10 MB - Memory Used: 1,094.90 MB - Memory Total: 32,510.00 MB</span>
-
-**[Info]** PID: 204630  Task ID: 6  Task Name: `exec_function`  Request Memory: 15,000 MB
-
-<span style="color: #2ecc71; font-weight: bold;">Model using GPU 1 Load: 0 Occupied Num: 1</span>
-
+![Alt text](./runing_task_info.png)
 
 ## Completed Results
 
