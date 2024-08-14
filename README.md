@@ -78,45 +78,27 @@ Ensure you have these dependencies installed before running the script.
 
 
 
-# GPU Status and Task Information
+# running output results
 
 ## Execution Details
 
-- <span style="color: green;">2024-08-14 15:28</span>
-  - Running time: 0.20 min                         
-  - Running tasks: [2] 1, 2                        
-  - Waiting tasks: [8] 0, 3, 4, 5, 6, 7, 8, 9                         
-  - Completed tasks: [0]                          
+- <span style="color: green;">2024-08-14 15:29</span>
+  - Running time: 0.80 min                         
+  - Running tasks: [5] 2, 3, 4, 8, 9                        
+  - Waiting tasks: [4] 0, 5, 6, 7                         
+  - Completed tasks: [1] 1                         
   - Error tasks: [0]
 
-- <span style="color: magenta; font-weight: bold;">Remaining tasks: 10  Remaining time: 100,000.00 min</span>
+- <span style="color: magenta; font-weight: bold;">Remaining tasks: 9  Remaining time: 7.21 min</span>
 
-- <span style="color: lightblue;">Found available GPU: GPU 1 - Occupied Total: 0 - Load: 6.7% - Available Memory: 15,600.20 MB - Memory Used: 16,909.80 MB - Memory Total: 32,510.00 MB</span>
+- <span style="color: blue; font-weight: bold;">`exec_function has started.`</span>
 
-- **[Info]** PID: 201214  Task ID: 3  Task Name: `exec_function`  Request Memory: 15,000 MB
+- <span style="color: lightblue; font-weight: bold;">TASK 2 HAS COMPLETED</span>
+- <span style="color: lightblue; font-weight: bold;">TASK 3 HAS COMPLETED</span>
 
-- <span style="color: lime; font-weight: bold;">Model using GPU 1 Load: 0 Occupied Num: 0</span>
-  - Using GPU devices: 1
-  - Starting computation on GPU 1...
-  - `exec_function` has started.
+- <span style="color: lightblue;">Found available GPU: GPU 1 - Occupied Total: 1 - Load: 0.7% - Available Memory: 27,905.00 MB - Memory Used: 4,605.00 MB - Memory Total: 32,510.00 MB</span>
+- <span style="color: lightblue;">Found available GPU: GPU 3 - Occupied Total: 2 - Load: 4.5% - Available Memory: 31,415.10 MB - Memory Used: 1,094.90 MB - Memory Total: 32,510.00 MB</span>
 
-- <span style="color: lightblue;">Found available GPU: GPU 1 - Occupied Total: 1 - Load: 6.2% - Available Memory: 27,370.30 MB - Memory Used: 5,139.70 MB - Memory Total: 32,510.00 MB</span>
+- **[Info]** PID: 204630  Task ID: 6  Task Name: `exec_function`  Request Memory: 15,000 MB
 
-- **[Info]** PID: 201701  Task ID: 4  Task Name: `exec_function`  Request Memory: 15,000 MB
-
-- <span style="color: lime; font-weight: bold;">Model using GPU 1 Load: 0 Occupied Num: 2</span>
-  - Using GPU devices: 1
-  - Starting computation on GPU 1...
-  - `exec_function` has started.
-
-- <span style="color: red;">Didn't find available GPU, please wait...</span>
-
-- <span style="color: green;">2024-08-14 15:28</span>
-  - Running time: 0.40 min                         
-  - Running tasks: [4] 1, 2, 3, 4                        
-  - Waiting tasks: [6] 0, 5, 6, 7, 8, 9                         
-  - Completed tasks: [0]                          
-  - Error tasks: [0]
-
-- <span style="color: magenta; font-weight: bold;">Remaining tasks: 10  Remaining time: 100,000.00 min</span>
-
+- <span style="color: lime; font-weight: bold;">Model using GPU 1 Load: 0 Occupied Num: 1</span>
