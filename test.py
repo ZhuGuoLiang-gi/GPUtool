@@ -51,6 +51,6 @@ if __name__ == '__main__':
                 'max_tasks_num_per_gpu': task_control['max_task_num_per_gpu'],
             }
         }
-    tasks.append(task)
+        tasks.append(task)
 
     batch_task(tasks, **task_control)
