@@ -1,9 +1,6 @@
 import subprocess
-import re
 import os
-import pty
 import multiprocessing
-from typing import List, Tuple, Callable, Any
 import paramiko
 import pynvml
 import time
@@ -233,6 +230,23 @@ def get_gpu_device(requery_memory,max_tasks_num_per_gpu,max_usage):
                     print(f"\033[32;1m model using gpu {gpu_id} load:{usage} occupied_num:{occupied_task_num}\033[0m")
                     return gpu_id
         time.sleep(3)
+        
+        
+def get_gpu_count():
+    try:
+        # 使用 nvidia-smi 命令获取 GPU 信息
+        result = subprocess.run(['nvidia-smi', '--list-gpus'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode != 0:
+            print("Failed to run nvidia-smi:", result.stderr)
+            return 0
+        
+        # 解析输出，每个 GPU 一行
+        gpu_count = len(result.stdout.strip().split('\n'))
+        return gpu_count
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return 0
 
 def batch_task(tasks,**kwargs):
     
@@ -241,18 +255,25 @@ def batch_task(tasks,**kwargs):
     max_task_num_per_gpu = kwargs.get('max_task_num_per_gpu',5)
     interval_output_tasks_info = kwargs.get('interval_output_tasks_info',300)
     gpu_max_load = kwargs.get('gpu_max_load',80)
+    specified_gpu = kwargs.get('specified_gpu',[])
     requery_memory = kwargs.get('requery_memory',1000)
     error_loop = kwargs.get('error_loop',False)
     
     
-    global running_tasks, waiting_tasks, completed_tasks, error_tasks
+    global running_tasks, waiting_tasks, completed_tasks, error_tasks,GPU_task
     
     def print_tasks_info():
-        global running_tasks, waiting_tasks, completed_tasks,error_tasks,terminate_event
+        global running_tasks, waiting_tasks, completed_tasks,error_tasks,terminate_event,GPU_task
         start_runings = time.time()
         interval_time_start =  0
         
+        red_bold = "\033[1;31m"  
+        blue_italic = "\033[3;34m" 
+        reset = "\033[0m" 
+        
         while not terminate_event.is_set():
+            
+
             
             current_time = time.time()
             time_data = time.strftime('%Y-%m-%d %H:%M', time.localtime(current_time))
@@ -262,7 +283,7 @@ def batch_task(tasks,**kwargs):
             remaining_time = remaining_task / (task_per_time + 0.0001)
             interval_time_end = time.time()
             interval_time = (interval_time_end - interval_time_start)
-            if  interval_output_tasks_info - interval_time < 0:
+            if interval_output_tasks_info - interval_time < 0:
                 interval_time_start =  time.time()
                 print(
                     f'\n\033[92m\n{time_data}\n\t running time: {running_time:.2f} min \
@@ -273,7 +294,17 @@ def batch_task(tasks,**kwargs):
                 )
                     
                 print('\033[1;35m' + f'remaining tasks: {remaining_task}  remaining time: {remaining_time:.2f}' + ' min' + '\033[0m',flush=True)
+                
+                print(f'')
+                for gpu_id, tasks in GPU_task.items():
+                    gpu_id_str = f"{red_bold}GPU {gpu_id} Occuppied Tasks | {reset}"
+                    tasks_str = ', '.join([f"{blue_italic}{task}{reset}" for task in tasks])
+                    print(f"{gpu_id_str} {tasks_str}")
+                
+                
             time.sleep(1)
+            
+
         return 0
     
     def monitor_gpu(gpu_queue):
@@ -298,8 +329,14 @@ def batch_task(tasks,**kwargs):
         
             
             
-    def detect_gpu_state(gpu_queue,requery_memory,max_load=80):
+    def detect_gpu_state(gpu_queue,requery_memory,max_task_num_per_gpu,max_load=80,**kwargs):
+        
         global terminate_event
+        
+        GPU_task = kwargs.get(f'GPU_task',None)
+        
+        
+        
         avail_gpu = []
         if not gpu_queue.empty():
             gpu_info = {}
@@ -321,25 +358,30 @@ def batch_task(tasks,**kwargs):
                 memory_total = np.mean(gpu_info[gpu_id]['memory_total'])
                 avil_memory = memory_total -memory_used
                 task_num = get_gpu_task_count(gpu_id)
-                if avil_memory > requery_memory  and load*100 < max_load and task_num < max_task_num_per_gpu:
+                if avil_memory > requery_memory  and load*100 < max_load and task_num < max_task_num_per_gpu and len(GPU_task[gpu_id]) < max_task_num_per_gpu:
                     avail_gpu_info += f"\033[96m\nfound avail gpu : GPU {gpu_id} - ocuppied_total:{task_num} - Load: {load*100:.1f}% - avil_Memory:{avil_memory:.2f}MB Memory Used: {memory_used:.2f}MB - Memory Total: {memory_total:.2f}MB\033[0m"
                     avail_gpu.append(gpu_id)
             print(avail_gpu_info,flush=True)
         return avail_gpu
     
             
-    def worker(idx, task_func, args, kwargs,error_queue,status_queue):
+    def worker(idx, task_func,gpu_device,args,kwargs,error_queue,status_queue):
+        import inspect
         try:
             status_queue.put((idx, "started"))
-            result = task_func(*args, **kwargs)
+            signature = inspect.signature(task_func)
+            params = signature.parameters.keys()
+            if 'gpu_device' not in params:
+                raise ValueError("Task Func Lack argument: \'gpu_device\'")
+            result = task_func(gpu_device,*args, **kwargs)
             status_queue.put((idx, "completed"))
         except Exception as e:
-            error_queue.put((idx, task_func, args, kwargs, str(e), traceback.format_exc()))
+            error_queue.put((idx, task_func,args, kwargs, str(e), traceback.format_exc()))
             return 0
         return 1
     
     def stop_processes():
-        global completed_tasks,running_tasks
+        global completed_tasks,running_tasks,GPU_task,task_GPU
         global processes 
         for idx in list(processes.keys())[:]:  # 创建键的副本
             p_idx = processes[idx]
@@ -349,6 +391,9 @@ def batch_task(tasks,**kwargs):
                 completed_tasks.append(idx)
                 print(f"\033[1;34m\nTASK {idx} HAS COMPLETED\033[0m")
                 del processes[idx]
+                if idx in GPU_task[task_GPU[idx]]:
+                    GPU_task[task_GPU[idx]].remove(idx)
+
         return 1
 
     def all_tasks_complete_justification():
@@ -361,7 +406,7 @@ def batch_task(tasks,**kwargs):
     def obtain_error_info(max_try,error_loop):
         
         global running_tasks, waiting_tasks, completed_tasks, error_tasks
-        global error_queue,task_id,processes,task_task_times,gpu_queue,task_task_times 
+        global error_queue,task_id,processes,task_task_times,gpu_queue,task_task_times,GPU_task,task_GPU
         
         while not error_queue.empty():
             idx, task_func, args, kwargs, error_message, traceback_info = error_queue.get()
@@ -384,6 +429,10 @@ def batch_task(tasks,**kwargs):
             if idx in processes:
                 del processes[idx]
             
+            
+            if idx in GPU_task[task_GPU[idx]]:
+                GPU_task[task_GPU[idx]].remove(idx)
+                
             if task_task_times[idx] <  max_try and error_loop:
                 bold_black_on_white = "\033[1m\033[30m\033[47m"
                 reset = "\033[0m"
@@ -396,7 +445,7 @@ def batch_task(tasks,**kwargs):
         return 1
         
     
-    global error_queue,task_id,processes,task_task_times,gpu_queue, task_task_times,copy_task_id,terminate_event
+    global error_queue,task_id,processes,task_task_times,gpu_queue, task_task_times,copy_task_id,terminate_event,GPU_task,task_GPU
 
     error_queue = multiprocessing.Queue()
     task_id = {id: task for id, task in enumerate(tasks)}
@@ -412,6 +461,20 @@ def batch_task(tasks,**kwargs):
     terminate_event = multiprocessing.Event()
     start_running_time = time.time()
     
+    
+    GPU_task = {}
+    task_GPU = {}
+    for i in range(get_gpu_count()):
+        GPU_task[i] = []
+        
+    if specified_gpu:
+        if len(specified_gpu) > 0:
+            for gpu_id in GPU_task:
+                if gpu_id not in specified_gpu:
+                    GPU_task[gpu_id] = ['X' for _ in range(max_task_num_per_gpu)]
+
+
+    
 
     gpu_queue = multiprocessing.Queue()
     gpu_thread = threading.Thread(target=monitor_gpu, args=(gpu_queue,))
@@ -421,6 +484,9 @@ def batch_task(tasks,**kwargs):
     print_tasks_info_thread = threading.Thread(target=print_tasks_info)
     print_tasks_info_thread.daemon = True
     print_tasks_info_thread.start()
+    
+
+        
     
 
     try:
@@ -438,25 +504,29 @@ def batch_task(tasks,**kwargs):
             kwargs = task['kwargs']
             
 
-            avail_gpu = detect_gpu_state(gpu_queue,requery_memory,max_load=gpu_max_load)
+            avail_gpu = detect_gpu_state(gpu_queue,requery_memory,max_task_num_per_gpu,max_load=gpu_max_load,GPU_task=GPU_task)
+            
+
             
             if len(avail_gpu) == 0:
                 for i in range(3):
                     message = "\033[31mDidn't find available GPU, please wait" + "." * (i + 1) + "\033[0m"
                     print(message, end='\r', flush=True)
-                    time.sleep(1)
+                    time.sleep(0.3)
                 print(' ' * len(message), end='\r', flush=True)  # 清空行
-                continue
+                break
             
-
+            gpu_device = int(avail_gpu[0])
             task_name = f"{func.__name__}"
-            p = multiprocessing.Process(target=worker, args=(idx, func, args, kwargs, error_queue,status_queue))
+            p = multiprocessing.Process(target=worker, args=(idx,func,gpu_device,args, kwargs, error_queue,status_queue))
             processes[idx] = p
             p.start()
             pid = p.pid
             print(f'[info] pid:{pid}  task_id: {idx} task_name: {task_name}  request_memory:{requery_memory}',flush=True)
             del task_id[idx]
-
+            GPU_task[gpu_device].append(idx)
+            task_GPU[idx] = gpu_device
+            
             task_started = False
             while not task_started:
                 if not status_queue.empty():
@@ -466,12 +536,14 @@ def batch_task(tasks,**kwargs):
                         running_tasks.append(task_idx)
                         waiting_tasks.remove(task_idx)
                         task_started = True
-                time.sleep(1)
+                time.sleep(0.2)
+            
             
             stop_processes()
             obtain_error_info(max_try,error_loop)
             all_task_completed=all_tasks_complete_justification()
-            time.sleep(1)
+            time.sleep(0.2)
+        
         stop_processes()
         obtain_error_info(max_try,error_loop)
         all_task_completed=all_tasks_complete_justification()
