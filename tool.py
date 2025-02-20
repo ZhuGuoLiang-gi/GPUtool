@@ -1,3 +1,4 @@
+
 import subprocess
 import os
 import multiprocessing
@@ -368,12 +369,15 @@ def batch_task(tasks,**kwargs):
     def worker(idx, task_func,gpu_device,args,kwargs,error_queue,status_queue):
         import inspect
         try:
+            # Set the environment variable to specify which GPU to use
+            os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_device)
+        
             status_queue.put((idx, "started"))
             signature = inspect.signature(task_func)
             params = signature.parameters.keys()
-            if 'gpu_device' not in params:
-                raise ValueError("Task Func Lack argument: \'gpu_device\'")
-            result = task_func(gpu_device,*args, **kwargs)
+            # if 'gpu_device' not in params:
+            #     raise ValueError("Task Func Lack argument: \'gpu_device\'")
+            result = task_func(*args, **kwargs)
             status_queue.put((idx, "completed"))
         except Exception as e:
             error_queue.put((idx, task_func,args, kwargs, str(e), traceback.format_exc()))
@@ -501,7 +505,11 @@ def batch_task(tasks,**kwargs):
             task = task_id[idx]
             func = task['func']
             args = task['args']
-            kwargs = task['kwargs']
+            
+            if 'kwargs' in task:
+                kwargs = task['kwargs']
+            else:
+                kwargs = {}
             
 
             avail_gpu = detect_gpu_state(gpu_queue,requery_memory,max_task_num_per_gpu,max_load=gpu_max_load,GPU_task=GPU_task)
