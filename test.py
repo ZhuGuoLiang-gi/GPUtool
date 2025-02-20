@@ -2,14 +2,7 @@ from tool import batch_task
 import torch
 import time
 
-def exec_function(gpu_device,param1, param2, **kwargs):
-    requery_memory = kwargs.get('requery_memory', None)
-    gpu_max_usage = kwargs.get('gpu_max_usage', None)
-    max_tasks_num_per_gpu = kwargs.get('max_tasks_num_per_gpu', None)
-    
-    # Get the available GPU devices
-    gpu_device = gpu_device
-    print(param1, param2, f'Using GPU devices: {gpu_device}')
+def exec_function(param1, param2, **kwargs):
 
     if param1 == 1:
         raise ValueError(f'param1 isn\'t equal to 1')
@@ -45,11 +38,6 @@ if __name__ == '__main__':
             'task_name': f'task_{i}',
             'func': exec_function,
             'args': (i, i),
-            'kwargs': {
-                'requery_memory': task_control['requery_memory'],
-                'gpu_max_usage': task_control['gpu_max_load'],
-                'max_tasks_num_per_gpu': task_control['max_task_num_per_gpu'],
-            }
         }
         tasks.append(task)
 
